@@ -27,6 +27,18 @@ const ambassdorSchema = new mongoose.Schema({
         select: false,
     },
 
+    url:{
+        type: String,
+    },
+
+    userRegistrationCount: {
+        type: Number,   
+    },
+    
+    points:{
+        type: Number,
+    },
+
 
     resetPasswordToken: String,
     resetPasswordExpire: Date,

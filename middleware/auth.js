@@ -1,5 +1,6 @@
 const Ambassdor = require('../models/Ambassdor');
 const jwt = require('jsonwebtoken');
+const User = require('../models/User');
 
 exports.isAuthenticated = async (req, res, next) => {
 
@@ -14,7 +15,7 @@ exports.isAuthenticated = async (req, res, next) => {
 
         const decoded = await jwt.verify(token, process.env.JWT_SECRET);
 
-        req.user = await Ambassdor.findById(decoded._id);
+        req.user = await Ambassdor.findById(decoded._id) || await User.findById(decoded._id); ;
 
         next();
     } catch (error) {

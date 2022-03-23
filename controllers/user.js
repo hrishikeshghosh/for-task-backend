@@ -1,3 +1,4 @@
+const User = require("../models/User");
 const Ambassdor = require("../models/Ambassdor");
 const crypto = require("crypto"); 
 const Otp = require("../models/Otp");
@@ -7,17 +8,23 @@ const bcrypt = require('bcrypt')
 
 // const cloudinary = require('cloudinary') ;
 
-
 exports.verifyEmail = async(req,res)=>{
 
     try {
 
         const {email} = req.body;
 
-        const user = await Ambassdor.findOne({email});
+        if(!email){
+            return res.status(400).json({
+                message: "Please provide email",
+                success: false
+            })
+        }
+
+        const user = await User.findOne({email});
         if(user){
             return res.status(400).json({
-                message: "Ambassdor already exists",
+                message: "User already exists",
                 success: false
             })
         }
@@ -68,7 +75,6 @@ exports.verifyEmail = async(req,res)=>{
     }
 }
 
-
 exports.register = async(req,res)=>{
 
     try {
@@ -83,11 +89,11 @@ exports.register = async(req,res)=>{
             })
         }
 
-        let user = await Ambassdor.findOne({email});
+        let user = await User.findOne({email});
 
         if(user){
             return res.status(400).json({
-                message: "Ambassdor already exists",
+                message: "User already exists",
                 success: false
             })
         }
@@ -112,7 +118,7 @@ exports.register = async(req,res)=>{
         }
 
         
-        user = await Ambassdor.create({
+        user = await User.create({
             name,
             email,
             password, 
@@ -121,12 +127,6 @@ exports.register = async(req,res)=>{
                 url: "sample_url"
             },
         });
-
-        const url = `/api/v1/users?ambassdorid=${user._id}`
-
-        user.url = url;
-
-        await user.save();
 
         
              const token = await user.generateToken();
@@ -141,7 +141,7 @@ exports.register = async(req,res)=>{
         res.status(200)
         .cookie("token", token, options)
         .json({
-            message: "Ambassdor Successfully registered",
+            message: "User Successfully registered",
             user,
             success: true,
         })
@@ -155,18 +155,16 @@ exports.register = async(req,res)=>{
 }
 
 
-
-
 exports.login = async(req,res)=>{
     try {
 
         const {email, password} = req.body;
 
-        const user = await  Ambassdor.findOne({email}).select("+password").populate("");
+        const user = await  User.findOne({email}).select("+password").populate("");
 
         if(!user){
             return res.status(400).json({
-                message: "Ambassdor does not exist",
+                message: "User does not exist",
                 success: false
             })
         }
@@ -225,10 +223,10 @@ exports.myProfile = async(req,res)=>{
 
     try {
 
-        const user = await Ambassdor.findById(req.user._id).populate("");
+        const user = await User.findById(req.user._id).populate("");
 
         res.status(200).json({
-            message: "Ambassdor profile",
+            message: "User profile",
             user,
         });
         
@@ -243,7 +241,7 @@ exports.myProfile = async(req,res)=>{
 exports.updateProfile = async(req,res)=>{
     try {
 
-        const user = await Ambassdor.findById(req.user._id);
+        const user = await User.findById(req.user._id);
 
         const {name, email, avatar} = req.body;
 
@@ -285,7 +283,7 @@ exports.deleteMyProfile = async(req,res)=>{
 
     try {
 
-        const user = await Ambassdor.findById(req.user._id);
+        const user = await User.findById(req.user._id);
         const posts = user.posts;
         const userId = user._id;
         const followers = user.followers;
@@ -299,7 +297,7 @@ exports.deleteMyProfile = async(req,res)=>{
 
         // await user.remove();
 
-        // logout Ambassdor after deleting profile
+        // logout User after deleting profile
         res.cookie("token", null, {expires:new Date(Date.now()), httpOnly:true});
 
         res.status(200).json({
@@ -321,11 +319,11 @@ exports.forgotPassword = async(req,res)=>{
 
     try{
 
-        const user = await Ambassdor.findOne({email:req.body.email});
+        const user = await User.findOne({email:req.body.email});
 
         if(!user){
             return res.status(404).json({
-                message: "Ambassdor not found",
+                message: "User not found",
                 success: false
             })
         }
@@ -378,7 +376,7 @@ exports.resetPassword = async(req,res)=>{
 
         const resetPasswordToken = crypto.createHash("sha256").update(req.params.token).digest("hex");
 
-        const user = await Ambassdor.findOne({
+        const user = await User.findOne({
             resetPasswordToken,
             resetPasswordExpire: {$gt: Date.now()},
         })
@@ -422,7 +420,7 @@ exports.updatePassword = async(req,res)=>{
     
     try {
 
-        const user = await Ambassdor.findById(req.user._id).select("+password");
+        const user = await User.findById(req.user._id).select("+password");
 
 
         const {oldPassword, newPassword} = req.body;
@@ -450,6 +448,85 @@ exports.updatePassword = async(req,res)=>{
             message: "Password successfully updated",
             success: true
         })
+        
+    } catch (error) {
+        res.status(500).json({
+            message: error.message,
+            success: false
+        })
+    }
+}
+
+
+
+
+// Request to buy Course
+exports.referalUrlRequest = async(req,res)=>{
+
+    try {
+
+        const user = await User.findById(req.user._id);
+        
+
+        if(!user){
+            res.status(404).json({
+                message: "User not found",
+                success: false
+            })
+        }
+
+        const {coursePrice, courseName, courseId} = req.body;
+
+        // For checking if user has already enrolled for this course
+        user.course.map((item)=>{
+            if(item.courseId === courseId){
+                return res.status(400).json({
+                    message: "You have already enrolled in this course",
+                    success: false
+                })
+            }
+        })
+
+
+        // To check if this is referral request or not 
+        if(req.params.id!=0){
+            const invitor = await User.findById(req.params.id);
+
+            if(!invitor){
+                res.status(404).json({
+                    message: "Link is not valid",
+                    success: false
+                })
+            }
+
+            console.log(invitor.points);
+
+            invitor.points = invitor.points ? invitor.points + (coursePrice*5)/100 : (coursePrice*5)/100;
+
+            await invitor.save();
+
+            user.courses.push({
+                course: courseName,
+                price: coursePrice,
+            })
+
+            await user.save();
+        }
+        else{
+            user.courses.push({
+                course: courseName,
+                price: coursePrice,
+            })
+
+            await user.save();
+        }
+
+
+        res.status(200).json({
+            message: "Course Successfully added",
+            success: true
+        })
+        
         
     } catch (error) {
         res.status(500).json({

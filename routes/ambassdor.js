@@ -9,6 +9,7 @@ const {register,
     myProfile,
     forgotPassword,
     resetPassword,
+    verifyEmail,
 
 } = require('../controllers/ambassdor');
 
@@ -16,6 +17,8 @@ const {register,
 const {isAuthenticated} = require('../middleware/auth');
 const router = express.Router();
 
+
+router.route('/verify/email').post(verifyEmail);
 
 router.route('/register').post(register);
 

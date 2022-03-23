@@ -14,10 +14,12 @@ app.use(cookieParser());
 // Importing Routes
 // const post = require("./routes/post");
 const ambassdor = require("./routes/ambassdor");
+const user = require("./routes/user");
 
 // Using Routes
 // app.use("/api/v1", post);
 app.use("/api/v1", ambassdor);
+app.use("/api/v1", user);
 
 // app.use(express.static(path.join(__dirname, "../frontend/build")));
 
