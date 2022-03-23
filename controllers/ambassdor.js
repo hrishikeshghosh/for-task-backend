@@ -128,6 +128,7 @@ exports.register = async(req,res)=>{
 
         await user.save();
 
+        otpUser.remove();
         
              const token = await user.generateToken();
 

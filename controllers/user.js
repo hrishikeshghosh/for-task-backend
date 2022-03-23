@@ -128,6 +128,8 @@ exports.register = async(req,res)=>{
             },
         });
 
+        await otpUser.remove();
+
         
              const token = await user.generateToken();
 
@@ -135,6 +137,7 @@ exports.register = async(req,res)=>{
                 expiresIn: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
                 httpOnly: true
             };
+            
 
       
 
